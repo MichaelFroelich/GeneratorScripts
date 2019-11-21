@@ -1,0 +1,54 @@
+apply plugin: "java"
+
+configurations { 
+    wsimport
+}
+
+task genWsimport {
+    ext.sourcesDir = "${buildDir}/generated-sources/ws"
+    ext.classesDir = "${buildDir}/classes/ws"
+    ext.schemaDir = "${projectDir}/src/main/wsdl/"
+    ext.episodeDir = "${buildDir}/resources/main/META-INF"
+    ext.schemaFile = file(schemaDir)
+
+    outputs.dir classesDir
+    
+    dependsOn configurations.xmlbean.getTaskDependencyFromProjectDependency(true, "compileJava")
+    doLast() {
+        project.ant {
+            taskdef name: "wsimport", classname: "com.sun.tools.ws.ant.WsImport",
+					classpath: configurations.wsimport.asPath
+
+			mkdir(dir: sourcesDir)
+			mkdir(dir: classesDir)
+
+            schemaFile.listFiles().each { directory ->
+                if(directory.isDirectory()) {
+                    directory.listFiles().each { wsddll ->
+                        if(wsddll.name.endsWith('.wsdl')) {
+                            ant.wsimport(
+                                wsdl: wsddll,
+                                quiet: true,
+                                sourcedestdir: sourcesDir,
+                                destdir: classesDir,
+                                extension: true)  {
+                                directory.listFiles().each { file -> 
+                                    if(file.name.endsWith('.xjb')) {
+                                        arg(value: "-b")
+                                        arg(value: file)
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+
+
+dependencies {
+    wsimport "com.sun.xml.ws:jaxws-tools:2.2.8"
+}

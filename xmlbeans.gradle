@@ -1,0 +1,50 @@
+apply plugin: "java"
+
+configurations {
+    xmlbean
+}
+
+task genXmlbeans {
+    ext.sourcesDir = "${buildDir}/generated-sources/gen"
+    ext.classesDir = "${buildDir}/classes/gen"
+    ext.schemaDir = "${projectDir}/src/main/schemas/"
+    outputs.dir classesDir
+    
+    dependsOn configurations.xmlbean.getTaskDependencyFromProjectDependency(true, "compileJava")
+
+   	doLast() {
+		project.ant {
+			taskdef name: "xmlbean", classname: "org.apache.xmlbeans.impl.tool.XMLBean",
+					classpath: configurations.xmlbean.asPath
+			mkdir(dir: sourcesDir)
+			mkdir(dir: classesDir)
+
+            ant.taskdef(
+                    name: 'xmlbean',
+                    classname: 'org.apache.xmlbeans.impl.tool.XMLBean',
+                    classpath: configurations.xmlbean.asPath)
+
+            ant.xmlbean(
+                    schema: schemaDir,
+                    srcgendir: sourcesDir,
+                    classgendir: classesDir,
+                    srconly: true,
+                    javasource: sourceCompatibility,
+                    classpath: configurations.xmlbean.asPath,
+                    typesystemname: "com.telstra.ocsia") {
+                    }
+
+            javac(destdir: classesDir,
+                classpath: configurations.xmlbean.asPath) {
+				src(path: sourcesDir)
+				include(name: "**/*.java")
+				include(name: "*.java")
+			}
+
+		}
+    } 
+}
+
+dependencies {
+    xmlbean "org.apache.xmlbeans:xmlbeans:3.0.2"
+}
